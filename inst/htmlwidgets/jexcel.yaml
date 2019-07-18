@@ -1,0 +1,12 @@
+dependencies:
+  - name: jexcel
+    version: 3.0.1
+    src: htmlwidgets/lib/jexcel
+    script: 
+      - js/jexcel.min.js
+      - js/japp.js
+      - js/jsuites.js
+    stylesheet:
+      - css/jexcel.min.css
+      - css/japp.css
+      - css/jsuites.css
