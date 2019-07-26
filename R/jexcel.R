@@ -14,11 +14,13 @@
 #'   \item \strong{source:} a vector of options for column when the type is 'dropdwown'.
 #'    \item \strong{multiple:} a boolean value indicating if the multiple options can be selected when the type is 'dropdown'.
 #'    The default value is false.
+#'    \item \strong{render:} a character value indicating if we want to render color for 'color' type instead of text. If render
+#'    is provided a value 'square', color is rendered instead of text.
 #' }
 #' @param colHeaders a vector of specifying the column headers. If both 'colHeaders' and 'title' attribute
 #' in columns is specified, the latter will take precedence.
-#' @param rowHeight a dataframe or matrix specifying height of different rows. The first column is consists of numerical value the
-#' specifies the row number while the second column is also numerical value that specifies the height in pixels.
+#' @param rowHeight a dataframe or matrix specifying height of different rows. The first column consists of numerical value that
+#' specifies the row number and the second column is also numerical value that specifies the height in pixels.
 #' @param nestedHeaders a list of dataframe having title and colspan as the attributes. The nested header
 #' in the same level should be in the same dataframe.
 #' @param defaultColWidth a numeric value specifying the default width of column when the width attribute of column is not specified.
@@ -49,23 +51,12 @@
 #' @param fullscreen a boolean value indicating if the table should be fullscreen. By default it is set to false.
 #' @param lazyLoading a boolean value indicating if lazy loading should be enabled. By default it is set to false.
 #' @param loadingSpin a boolean value indicating if loading spinner should be enabled. By default it is set to false.
-#' @param style a list to specify style for each cell. The tag should be the cell value and the value should be
-#' a vector of css styles to be applied.
+#' @param style a named list to specify style for each cell. The name should be the cell address and the value should be
+#' a valid 'css' string with styles.  For example, to style cell 'A1', the list should look like
+#' \code{style = list("A1" = "background-color: gray;")}.
 #' @import jsonlite
 #' @import htmlwidgets
-#' @examples
-#' library(excelR)
-#'
-#' data = data.frame(Model = c('Mazda', 'Pegeout', 'Honda Fit', 'Honda CRV'),
-#'                   Date=c('2006-01-01', '2005-01-01','2004-01-01', '2003-01-01' ),
-#'                   Availability = c(TRUE, FALSE, TRUE, TRUE))
-#'
-#'
-#' columns = data.frame(title=c('Model', 'Date', 'Availability'),
-#'                      width= c(300, 300, 300),
-#'                      type=c('text', 'calendar', 'checkbox'))
-#'
-#' excelTable(data=data, columns = columns)
+#' @example inst/examples/examples_widget.R
 excelTable <-
   function(data = NULL,
            columns = NULL,
@@ -126,7 +117,7 @@ excelTable <-
 
       #Check if column header is a vector
       if (!is.vector(colHeaders)) {
-        stop("'colHeader' must be a vector, cannot be",
+        stop("'colHeaders' must be a vector, cannot be ",
              class(colHeaders))
       }
 
@@ -149,7 +140,7 @@ excelTable <-
     {
       #Check if 'columns' is a dataframe
       if (!is.data.frame(columns)) {
-        stop("'columns' must be a dataframe, cannot be", class(columns))
+        stop("'columns' must be a dataframe, cannot be ", class(columns))
       }
 
       #Check if number of rows in 'columns' is equal to the number of columns in 'data'
@@ -159,7 +150,7 @@ excelTable <-
           stop(
             "number of rows in 'columns' should be equal to number of columns in 'data', expected number of rows in 'columns' to be ",
             ncol(data),
-            "but got ",
+            " but got ",
             nrow(columns)
           )
         }
@@ -188,7 +179,7 @@ excelTable <-
         warning(
           "unknown attribute(s) ",
           colnames(columns)[!colnames(columns) %in% colAttributes],
-          " for 'columns' found, ignoring those attributes"
+          " for 'columns' found, ignoring those attribute(s)"
         )
       }
 
@@ -200,12 +191,12 @@ excelTable <-
     #Check row height
     if (!is.null(rowHeight)) {
       if (!is.data.frame(rowHeight) && !is.matrix(rowHeight)) {
-        stop("'rowHeight' must be either a matrix or a dataframe, cannot be ",
+        stop("'rowHeight' must either be a matrix or a dataframe, cannot be ",
              class(rowHeight))
       }
       if (ncol(rowHeight) != 2) {
         stop(
-          "'rowHeight' must be either a matrix or dataframe with two columns, but got ",
+          "'rowHeight' must either be a matrix or a dataframe with two columns, but got ",
           ncol(rowHeight),
           " column(s)"
         )
@@ -218,8 +209,8 @@ excelTable <-
     if (!is.null(nestedHeaders)) {
       # nestedHeaders should be list
       if (!is.list(nestedHeaders)) {
-        stop("'nestedHeaders' must be a list of dataframe(s), cannot be ",
-             class(nestedHeaders))
+        stop("'nestedHeaders' must be a list of dataframe(s), cannot be ", 
+        class(nestedHeaders))
       }
 
       headerAttributes <- c("title", "colspan")
@@ -238,8 +229,7 @@ excelTable <-
         # data.frame nestedHeaders should have atleast two column and one row
         if (ncol(nestedHeader) < 2 || nrow(nestedHeader) < 1) {
           stop(
-            "the dataframe(s) in 'nestedHeaders must contain at least two columns and one row,
-             'title' and 'colspan', but got only ",
+            "the dataframe(s) in 'nestedHeaders must contain at least two columns and one row, 'title' and 'colspan', but got only ",
             ncol(nestedHeader),
             " column and ",
             nrow(nestedHeader),
@@ -250,8 +240,7 @@ excelTable <-
         # the dataframe in nestedHeaders should have one column named as title
         if (!"title" %in% colnames(nestedHeader)) {
           stop(
-            "one of the column in the dataframe in list of 'nestedHeaders' should have 'title' as header
-             which will be used as title of the nested header"
+            "one of the column in the dataframe in list of 'nestedHeaders' should have 'title' as header which will be used as title of the nested header"
           )
         }
 
@@ -259,8 +248,7 @@ excelTable <-
         # the dataframe in nestedHeaders should have one column named as colspan
         if (!"colspan" %in% colnames(nestedHeader)) {
           stop(
-            "one of the column in the dataframe in list of 'nestedHeaders' should have 'colspan' as header
-             which will be used to determine the number of column it needs to span"
+            "one of the column in the dataframe in list of 'nestedHeaders' should have 'colspan' as header which will be used to determine the number of column it needs to span"
           )
         }
 
@@ -280,9 +268,9 @@ excelTable <-
     }
 
     if (!is.null(defaultColWidth)) {
-      if (!is.numeric(defaultColWidth)) {
-        stop("'defaultColWidth' must be a numeric value but got ",
-             class(defaultColWidth))
+      if (!is.numeric(defaultColWidth) || length(defaultColWidth) > 1) {
+        stop("'defaultColWidth' must be a numeric value of length 1 but got ",
+             class(defaultColWidth), " of length ", length(defaultColWidth))
       }
 
       paramList$defaultColWidth <- defaultColWidth
@@ -300,7 +288,7 @@ excelTable <-
       # minDimensions must be length of 2
       if (length(minDimensions) != 2) {
         stop(
-          "'minDimensions' must be a vector of length but got length of ",
+          "'minDimensions' must be a vector of length of 2 but got length of ",
           length(minDimensions)
         )
       }
@@ -308,75 +296,37 @@ excelTable <-
       paramList$minDimensions <- minDimensions
     }
 
-    # Check columnSorting
-    if (!columnSorting) {
-      paramList$columnSorting = columnSorting
-
-    }
-
-    #Check columnDrag
-    if (columnDrag) {
-      paramList$columnDrag <- TRUE
-    }
-
-    # Check columnResize
-    if (!columnResize) {
-      paramList$columnResize <- FALSE
-    }
-
-    # Check rowResize
-    if (rowResize) {
-      paramList$rowResize <- TRUE
-    }
-
-    # Check rowDrag
-    if (!rowDrag) {
-      paramList$rowDrag <- FALSE
-    }
-
-    # Check editable
-    if (!editable) {
-      paramList$editable <- FALSE
-    }
-
-    # Check allowInsertRow
-    if (!allowInsertRow) {
-      paramList$allowInsertRow <- FALSE
-    }
-
-    # Check allowInsertColumn
-    if (!allowInsertColumn) {
-      paramList$allowInsertColumn <- FALSE
-    }
-
-    # Check allowDeleteRow
-    if (!allowDeleteRow) {
-      paramList$allowDeleteRow <- FALSE
-    }
-
-    # Check allowDeleteColumn
-    if (!allowDeleteColumn) {
-      paramList$allowDeleteColumn <- FALSE
-    }
-
-    # Check allowRenameColumn
-    if (!allowRenameColumn) {
-      paramList$allowRenameColumn <- FALSE
-    }
-
-    # Check allowComments
-    if (allowComments) {
-      paramList$allowComments <- TRUE
-    }
-
-    # Check wordWrap
-    if (wordWrap) {
-      paramList$wordWrap <- TRUE
-    }
-
-    # Check selectionCopy
-    if (!selectionCopy) {
-      paramList$selectionCopy <- FALSE
+    # Check logical arguments
+    for (arg in c(
+      "columnSorting",
+      "columnDrag",
+      "columnResize",
+      "rowResize",
+      "rowDrag",
+      "editable",
+      "allowInsertRow",
+      "allowInsertColumn",
+      "allowDeleteRow",
+      "allowDeleteColumn",
+      "allowRenameColumn",
+      "allowComments",
+      "wordWrap",
+      "selectionCopy",
+      "search",
+      "fullscreen",
+      "lazyLoading",
+      "loadingSpin"
+    )) {
+      argvalue <- get(arg)
+      if(!is.null(argvalue)) {
+        # now check these arguments to make sure they are logical
+        if(is.logical(argvalue)) {
+          paramList[[arg]] <- argvalue
+        } else {
+          warning("Argument ", arg, " should be either TRUE or FALSE.  Ignoring ", arg, ".", call. = FALSE)
+          paramList[[arg]] <- NULL
+        }
+      }
     }
 
     # Check mergeCells
@@ -397,7 +347,7 @@ excelTable <-
 
         if (length(mergeCell) != 2) {
           stop(
-            "expected each parameter in 'mergeCells' list to be a vector of length  2 but got vector of lrngth",
+            "expected each parameter in 'mergeCells' list to be a vector of length  2 but got vector of length ",
             length(mergeCells)
           )
         }
@@ -407,34 +357,14 @@ excelTable <-
 
     }
 
-    # Search
-    if (search) {
-      paramList$search <- TRUE
-    }
-
     # Check pagination
     if (!is.null(pagination)) {
-      if (!is.numeric(pagination)) {
-        stop("'pagination' must be an integer but got ",
-             class(pagination))
+      if (!is.numeric(pagination) || length(pagination) > 1) {
+        stop("'pagination' must be an integer of length 1 but got ",
+             class(pagination), " of length ", length(pagination))
       }
 
       paramList$pagination <- pagination
-    }
-
-    # Check fullscreen
-    if (fullscreen) {
-      paramList$fullscreen <- TRUE
-    }
-
-    # Check lazyLoading
-    if (lazyLoading) {
-      paramList$lazyLoading <- TRUE
-    }
-
-    # Check loadingSpin
-    if (loadingSpin) {
-      paramList$loadingSpin <- TRUE
     }
 
     # Check style

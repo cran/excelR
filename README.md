@@ -1,7 +1,17 @@
 # excelR
+[![version](https://www.r-pkg.org/badges/version/excelR)](https://CRAN.R-project.org/package=excelR)
+[![CRAN_Download_Badge](https://cranlogs.r-pkg.org/badges/grand-total/excelR)](https://cran.r-project.org/package=excelR)
+[![Travis-CI Build Status](https://travis-ci.org/Swechhya/excelR.svg?branch=master)](https://travis-ci.org/Swechhya/excelR)
+[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/Swechhya/excelR?branch=master&svg=true)](https://ci.appveyor.com/project/Swechhya/excelR)
+[![codecov](https://codecov.io/gh/Swechhya/excelR/branch/master/graph/badge.svg)](https://codecov.io/gh/Swechhya/excelR)
+
 An R interface to [jExcel](https://bossanova.uk/jexcel/v3/) library to create web-based interactive tables and spreadsheets compatible with 'Excel' or any other spreadsheet software.
 
 ## Installation
+To install the stable CRAN version: 
+```r
+install.packages('excelR')
+```
 
 To install the latest development version from GitHub:
 ```r
@@ -51,6 +61,7 @@ This package can be used in `shiny`
 - Pagination
 - Lazy loading
 - Native color picker
-- Great data picker: dropdown, autocomplete, multiple, group options and icons
+- Data picker dropdown with autocomplete, multiple, and icons feature
+- Date picker
 
 
