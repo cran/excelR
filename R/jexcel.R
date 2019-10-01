@@ -100,7 +100,7 @@ excelTable <-
     {
       # It either has to be dataframe or matrix
       if (is.data.frame(data) || is.matrix(data)) {
-        paramList$data <- jsonlite::toJSON(data, dataframe = "values")
+        paramList$data <- jsonlite::toJSON(data, dataframe = "values", na = "null")
       } else {
         stop("'data' must be either a matrix or a data frame, cannot be ",
              class(data))
@@ -202,6 +202,7 @@ excelTable <-
 
         colTypes <- get_col_types(data)
         columns <- data.frame(type=colTypes)
+        columns <- add_source_for_dropdown_type(data, columns)
         paramList$columns <- jsonlite::toJSON(columns)
       }else{
         if(!"type" %in% colnames(columns) && autoColTypes){
@@ -209,6 +210,7 @@ excelTable <-
 
           colTypes <- get_col_types(data)
           columns$type <- colTypes
+          columns <- add_source_for_dropdown_type(data, columns)
           paramList$columns <-
             jsonlite::toJSON(columns[colnames(columns) %in% colAttributes])
         }
