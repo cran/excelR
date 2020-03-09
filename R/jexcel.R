@@ -5,19 +5,7 @@
 #' @param data a data object, can either be dataframe or a matrix.
 #' @param columns a dataframe containing different column attributes.
 #' The row number  of the dataframe specifies the column for which the attribute is to be specified and
-#' the header of the dataframe specifies the attribute.The following attributes are supported:
-#'  \itemize{
-#'   \item \strong{title:} a string specifying title of the column or the column header.
-#'   \item \strong{width:} a numerical value specifying the width of the column.
-#'   \item \strong{type:} the type of the column. It can be one of text, numeric, hidden, dropdown,
-#'   autocomplete, checkbox, radio, calendar, image or color.
-#'   \item \strong{source:} a vector of options for column when the type is 'dropdwown'.
-#'    \item \strong{multiple:} a boolean value indicating if the multiple options can be selected when the type is 'dropdown'.
-#'    The default value is false.
-#'    \item \strong{render:} a character value indicating if we want to render color for 'color' type instead of text. If render
-#'    is provided a value 'square', color is rendered instead of text.
-#'   \item \strong{readOnly:} a boolean value specifying the readonly column.
-#' }
+#' the header of the dataframe specifies the attribute, e.g., title, width, type, source, multiple, render, readOnly.
 #' @param colHeaders a vector of specifying the column headers. If both 'colHeaders' and 'title' attribute
 #' in columns is specified, the latter will take precedence.
 #' @param rowHeight a dataframe or matrix specifying height of different rows. The first column consists of numerical value that
@@ -58,6 +46,16 @@
 #' \code{style = list("A1" = "background-color: gray;")}.
 #' @param autoColTypes a boolean value indicating if column type should be automatically detected if
 #' @param showToolbar a boolean value indicating if toolbar should be shown. By default it is set to false.
+#' @param dateFormat a  string value indicating the date format if column of type 'calendar' is present. By default the
+#' format is 'DD/MM/YYYY'.
+#' @param digits number of decimal digits passed to \code{jsonlite::toJSON}. By default it is set to 4, use \code{NA} for max precision.
+#' @param autoWidth a boolean value indicating should the width of the column be automatically adjusted. By default this value is set to TRUE.
+#' The width value specified in 'columns' param will have higher precedence.
+#' @param autoFill a boolen value indicating whether the excel table fill the container. By default this value is set to false.
+#' The width value specified in 'columns' param will have highest precendence followed by autoWidth.
+#' @param getSelectedData a boolean value indicating whether the there should be trigger for data selection or not.
+#' By default this is set to false.
+#' @param  ... other jexcel parameters, e.g., updateTable
 #' @import jsonlite
 #' @import htmlwidgets
 #' @example inst/examples/examples_widget.R
@@ -91,7 +89,14 @@ excelTable <-
            loadingSpin = FALSE,
            style = NULL,
            autoColTypes = TRUE,
-           showToolbar = FALSE) {
+           showToolbar = FALSE,
+           dateFormat = 'DD/MM/YYYY',
+           digits = 4,
+           autoWidth = TRUE,
+           autoFill = FALSE,
+           getSelectedData = FALSE,
+           ...
+           ) {
     # List of parameters to send to js
     paramList <- list()
 
@@ -100,7 +105,7 @@ excelTable <-
     {
       # It either has to be dataframe or matrix
       if (is.data.frame(data) || is.matrix(data)) {
-        paramList$data <- jsonlite::toJSON(data, dataframe = "values", na = "null")
+        paramList$data <- jsonlite::toJSON(data, dataframe = "values", na = "null", digits = digits)
       } else {
         stop("'data' must be either a matrix or a data frame, cannot be ",
              class(data))
@@ -177,19 +182,8 @@ excelTable <-
 
       }
 
-      # Check if all the attributes in the columns is a valid attribute i.e. colname(columns) should be subset of attributes
-      colAttributes <-
-        c("title", "width", "type", "source", "multiple", "render", "readOnly")
-      if (!all(colnames(columns) %in% colAttributes)) {
-        warning(
-          "unknown attribute(s) ",
-          colnames(columns)[!colnames(columns) %in% colAttributes],
-          " for 'columns' found, ignoring those attribute(s)"
-        )
-      }
-
-      paramList$columns <-
-        jsonlite::toJSON(columns[colnames(columns) %in% colAttributes])
+      # Add all the attributes in the columns
+      paramList$columns <- jsonlite::toJSON(columns)
 
     }
 
@@ -211,8 +205,7 @@ excelTable <-
           colTypes <- get_col_types(data)
           columns$type <- colTypes
           columns <- add_source_for_dropdown_type(data, columns)
-          paramList$columns <-
-            jsonlite::toJSON(columns[colnames(columns) %in% colAttributes])
+          paramList$columns <- jsonlite::toJSON(columns)
         }
       }
     }
@@ -346,7 +339,10 @@ excelTable <-
       "fullscreen",
       "lazyLoading",
       "loadingSpin",
-      "showToolbar"
+      "showToolbar",
+      "autoWidth",
+      "autoFill",
+      "getSelectedData"
     )) {
       argvalue <- get(arg)
       if(!is.null(argvalue)) {
@@ -406,6 +402,15 @@ excelTable <-
 
       paramList$style <- style
     }
+
+    # Check date format
+    if(!is.null(dateFormat)){
+        paramList$dateFormat <- dateFormat
+    }
+
+    # Add all other parameters
+    paramList <- append(paramList, list(...))
+
 
     # create the widget
     htmlwidgets::createWidget(

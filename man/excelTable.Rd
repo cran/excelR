@@ -14,26 +14,15 @@ excelTable(data = NULL, columns = NULL, colHeaders = NULL,
   selectionCopy = TRUE, mergeCells = NULL, search = FALSE,
   pagination = NULL, fullscreen = FALSE, lazyLoading = FALSE,
   loadingSpin = FALSE, style = NULL, autoColTypes = TRUE,
-  showToolbar = FALSE)
+  showToolbar = FALSE, dateFormat = "DD/MM/YYYY", digits = 4,
+  autoWidth = TRUE, autoFill = FALSE, getSelectedData = FALSE, ...)
 }
 \arguments{
 \item{data}{a data object, can either be dataframe or a matrix.}
 
 \item{columns}{a dataframe containing different column attributes.
 The row number  of the dataframe specifies the column for which the attribute is to be specified and
-the header of the dataframe specifies the attribute.The following attributes are supported:
- \itemize{
-  \item \strong{title:} a string specifying title of the column or the column header.
-  \item \strong{width:} a numerical value specifying the width of the column.
-  \item \strong{type:} the type of the column. It can be one of text, numeric, hidden, dropdown,
-  autocomplete, checkbox, radio, calendar, image or color.
-  \item \strong{source:} a vector of options for column when the type is 'dropdwown'.
-   \item \strong{multiple:} a boolean value indicating if the multiple options can be selected when the type is 'dropdown'.
-   The default value is false.
-   \item \strong{render:} a character value indicating if we want to render color for 'color' type instead of text. If render
-   is provided a value 'square', color is rendered instead of text.
-  \item \strong{readOnly:} a boolean value specifying the readonly column.
-}}
+the header of the dataframe specifies the attribute, e.g., title, width, type, source, multiple, render, readOnly.}
 
 \item{colHeaders}{a vector of specifying the column headers. If both 'colHeaders' and 'title' attribute
 in columns is specified, the latter will take precedence.}
@@ -102,6 +91,22 @@ a valid 'css' string with styles.  For example, to style cell 'A1', the list sho
 \item{autoColTypes}{a boolean value indicating if column type should be automatically detected if}
 
 \item{showToolbar}{a boolean value indicating if toolbar should be shown. By default it is set to false.}
+
+\item{dateFormat}{a  string value indicating the date format if column of type 'calendar' is present. By default the
+format is 'DD/MM/YYYY'.}
+
+\item{digits}{number of decimal digits passed to \code{jsonlite::toJSON}. By default it is set to 4, use \code{NA} for max precision.}
+
+\item{autoWidth}{a boolean value indicating should the width of the column be automatically adjusted. By default this value is set to TRUE.
+The width value specified in 'columns' param will have higher precedence.}
+
+\item{autoFill}{a boolen value indicating whether the excel table fill the container. By default this value is set to false.
+The width value specified in 'columns' param will have highest precendence followed by autoWidth.}
+
+\item{getSelectedData}{a boolean value indicating whether the there should be trigger for data selection or not.
+By default this is set to false.}
+
+\item{...}{other jexcel parameters, e.g., updateTable}
 }
 \description{
 This function is used to create excel like table
@@ -120,6 +125,31 @@ columns = data.frame(title=c('Model', 'Date', 'Availability'),
                      type=c('text', 'calendar', 'checkbox'))
 
 excelTable(data=data, columns = columns)
+
+### columns parameter ----
+# https://bossanova.uk/jexcel/v3/examples/column-types
+data <- data.frame(Car = c("Jazz", "Civic"),
+                   Make = c("Honda", "Honda" ),
+                   Photo = c("https://images.unsplash.com/photo-1535498730771-e735b998cd64?ixlib=rb
+                             -1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=634&q=80",
+                             "https://images.unsplash.com/photo-1533106497176-45ae19e68ba2?ixlib=rb
+                             -1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1950&q=80"),
+                   Available = as.Date(c("2019-02-12", "2018-07-11")),
+                   Stock = c(TRUE, TRUE),
+                   Price = c(2000, 4000.01),
+                   Color = c("#777700", "#007777"))
+
+columns <- data.frame(title = colnames(data),
+                      type = c("hidden", "dropdown", "image", "calendar",
+                               "checkbox", "numeric", "color"),
+                      width = c(120, 200, 200, 80, 100, 100, 100),
+                      source = I(list(NA, c("Honda", "Alfa Romeo", "Audi", "Bmw"),
+                                      NA, NA, NA, NA, NA)),
+                      mask = c(NA, NA, NA, NA, NA, "$ #.##,00", NA),
+                      decimal = c(NA, NA, NA, NA, NA, ",", NA),
+                      render = c(NA, NA, NA, NA, NA, NA, "square"))
+
+excelTable(data = data, columns = columns)
 
 ### no arguments with matrix ----
 excelTable(matrix(1:20, ncol=4))
@@ -161,4 +191,89 @@ excelTable(
     "D1" = 'background-color: orange;'
   )
 )
+
+### custom formating ----
+# conditional formats
+library(excelR)
+
+set.seed(1)
+data <- matrix(sample(c(-1:1), size = 25, replace = TRUE), nrow = 5)
+
+updateTable <- "function(instance, cell, col, row, val, label, cellName) {
+            val = cell.innerText;
+            if (val < 0) {
+                cell.style.color = 'red';
+            } else if (val > 0) {
+                cell.style.color = 'green';
+            } else {
+                cell.style.color = 'orange';
+            }
+}"
+
+excelTable(data = data, updateTable = htmlwidgets::JS(updateTable))
+
+# example from  https://bossanova.uk/jexcel/v3/examples/table-scripting
+library(excelR)
+
+data <- jsonlite::fromJSON('[
+    ["BR", "Cheese", 1, 3.99],
+    ["CA", "Apples", 0, 1.00],
+    ["US", "Carrots", 1, 0.90],
+    ["GB", "Oranges", 0, 1.20],
+    ["CH", "Chocolats", 1, 0.40],
+    ["AR", "Apples", 1, 1.10],
+    ["AR", "Bananas", 1, 0.30],
+    ["BR", "Oranges", 1, 0.95],
+    ["BR", "Pears", 1, 0.90],
+    ["", "", "", "=ROUND(SUM(D1:D8), 2)"]
+]')
+
+columns <- jsonlite::fromJSON('[
+  { "type": "autocomplete", "title":"Country", "width":"250", "url":"/jexcel/countries" },
+  { "type": "autocomplete", "title":"Food", "width":"150",
+      "source":["Apples","Bananas","Carrots","Oranges","Cheese","Kiwi","Chocolats","Pears"] },
+  { "type": "checkbox", "title":"Stock", "width":"100" },
+  { "type": "number", "title":"Price", "width":"100" }
+  ]')
+
+# url option to source in excelTable param columns
+columns$source[1] <- list(jsonlite::fromJSON(paste0('https://bossanova.uk', columns$url[1])))
+columns$url <- NULL
+
+updateTable <- "function(instance, cell, col, row, val, label, cellName) {
+        // Number formating
+        if (col == 3) {
+            // Get text
+            txt = cell.innerText;
+
+            // Format text
+            txt = txt.replace('$ ','');
+
+            // Update cell value
+            cell.innerHTML = '$ ' + txt;
+        }
+
+        // Odd row colours
+        if (row \% 2) {
+            cell.style.backgroundColor = '#edf3ff';
+        }
+
+        // Total row
+        if (row == 9) {
+            if (col < 3) {
+                cell.innerHTML = '';
+            }
+
+            if (col == 2) {
+                cell.innerHTML = 'Total';
+                cell.style.fontWeight = 'bold';
+            }
+
+            cell.className = '';
+            cell.style.backgroundColor = '#f46e42';
+            cell.style.color = '#ffffff';
+        }
+    }"
+
+excelTable(data = data, columns = columns, updateTable = htmlwidgets::JS(updateTable))
 }

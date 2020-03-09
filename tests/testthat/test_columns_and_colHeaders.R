@@ -19,12 +19,27 @@ test_that("'columns' argument gives error if number of column in 'data' is not e
             testthat::expect_error(excelTable(data = d, columns = c),  "number of rows in 'columns' should be equal to number of columns in 'data', expected number of rows in 'columns' to be 2 but got 4")
           })
 
-test_that("invalid 'columns' attributes should not be passed to htmlwidgets", {
+test_that("'columns' attributes length passed to htmlwidgets", {
   c <- data.frame(title=c('Model', 'Date', 'Availability'),
              length= c(300, 300, 300),
              type=c('text', 'calendar', 'checkbox'))
-  testthat::expect_warning(excelTable(columns = c))
-  testthat::expect_length(colnames(jsonlite::fromJSON(suppressWarnings(excelTable(columns = c)$x$columns))), 2)
+  testthat::expect_length(colnames(jsonlite::fromJSON(suppressWarnings(excelTable(columns = c)$x$columns))), 3)
+})
+
+test_that("'columns' attributes data.frame", {
+  c <- data.frame(title = c("Car", "Make", "Available", "Stock", "Price", "Color"),
+                  type = c("hidden", "dropdown", "calendar", "checkbox", "numeric", "color"),
+                  width = c(120, 200, 200, 80, 100, 100),
+                  source = NA,
+                  mask = c(NA, NA, NA, NA, "$ #.##,00", NA),
+                  decimal = c(NA, NA, NA, NA, ",", NA),
+                  render = c(NA, NA, NA, NA, NA, "square"),
+                  stringsAsFactors = FALSE)
+
+  # list, not AsIs class
+  c$source <- list(NA, c("Honda", "Alfa Romeo", "Audi", "Bmw"), NA, NA, NA, NA)
+
+  testthat::expect_equal(c, jsonlite::fromJSON(suppressWarnings(excelTable(columns = c)$x$columns)))
 })
 
 test_that("all valid 'columns' attribute should be passed to htmlwidgets",{
@@ -57,8 +72,16 @@ context("'colHeaders' and columns argument not specified")
 
 test_that("there should be warning if both 'colHeaders' and 'title' attribute of 'column' argument is not specified",{
   d <- matrix(1:10, ncol = 2)
-  testthat::expect_warning(excelTable(data=d))
+  c <-  data.frame( width= c(300, 300))
+  testthat::expect_warning(excelTable(data = d, columns = c ))
 })
+
+test_that("valid 'colHeaders' argument is passed to htmlwidget ", {
+  c <-  c(1, 2)
+  col <-  data.frame( width= c(300, 300))
+  testthat::expect_s3_class(suppressWarnings(excelTable(colHeaders = c, columns = col))$x$colHeaders, "json")
+})
+
 
 
 
